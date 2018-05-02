@@ -5,7 +5,7 @@ The goal of this project is to implement a simple Neural Network
 in Python using numpy.
 
 Architecture of the NN : 
-ReLU x 2 times + sigmoid for output
+Tanh x 2 times + sigmoid for output
 '''
 import numpy as np
 import matplotlib.pyplot as plt
