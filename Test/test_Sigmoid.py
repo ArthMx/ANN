@@ -16,11 +16,13 @@ print('Y shape :', y.shape)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # set architecture
-hidden_units = [20,10]
+alpha = 1
+hidden_units = [50,20]
 hidden_func='tanh'
 output_func='sigmoid'
 
-NN_clf = ANN_clf(hidden_units, hidden_func, output_func, epoch=5000, learning_rate=0.1)
+NN_clf = ANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func,\
+                 output_func=output_func, epoch=10000, learning_rate=0.1)
 
 NN_clf.fit(X_train, y_train)
 # compute train accuracy
