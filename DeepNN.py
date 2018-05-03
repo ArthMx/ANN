@@ -305,6 +305,7 @@ def NN_model(X, y, hidden_units, hidden_func='tanh', output_func='sigmoid', \
     print('Time : %.3f s' % (time.time()-t0))
     
     # print the cost function for each iterations
+    plt.figure()
     plt.plot(cost_list)
     plt.title('Cost function')
     plt.xlabel('Number of iterations, by hundreds')
@@ -333,54 +334,3 @@ def MakePrediction(X, parameters, hidden_func, output_func):
         Y_pred = ((A3 >0.5)*1).reshape(-1)
     
     return Y_pred
-
-
-
-
-
-#def GradCheck(X, Y, parameters, grads, hidden_func, output_func, epsilon=1e-7):
-#    '''
-#    Piece of crap, ugly and not working , do not use.
-#    
-#    Check if the gradient computed by backprop is correct
-#    '''
-#    grads_approx = {}
-#    for key in parameters:
-#        grads_approx[key] = np.zeros(parameters[key].shape)
-#        n, m = parameters[key].shape
-#        for i in range(n):
-#            for j in range(m):
-#                parameters_plus = parameters.copy()
-#                parameters_minus = parameters.copy()
-#                
-#                parameters_plus[key] = parameters[key].copy()
-#                parameters_minus[key] = parameters[key].copy()
-#                
-#                parameters_plus[key][i, j] +=  epsilon
-#                parameters_minus[key][i, j] -=  epsilon
-#                
-#                AL_plus, _ = ForwardProp(X, parameters_plus, hidden_func, output_func)
-#                cost_plus = ComputeCost(Y, AL_plus, output_func)
-#                
-#                AL_minus, _ = ForwardProp(X, parameters_minus, hidden_func, output_func)
-#                cost_minus = ComputeCost(Y, AL_minus, output_func)
-#                
-#                grads_approx[key][i, j] = (cost_plus - cost_minus)/(2*epsilon)
-#                
-#    grads_approx_array = np.array([])
-#    grads_array = np.array([])
-#    L = len(parameters)//2
-#    for l in range(1, L+1):
-#        grads_approx_array = np.append(grads_approx_array, grads_approx['W'+str(l)].flatten())
-#        grads_approx_array = np.append(grads_approx_array, grads_approx['b'+str(l)].flatten())
-#        
-#        grads_array = np.append(grads_array, grads['dW'+str(l)].flatten())
-#        grads_array = np.append(grads_array, grads['db'+str(l)].flatten())
-#    
-#    grads_approx_array_norm = np.linalg.norm(grads_approx_array)
-#    grads_array_norm = np.linalg.norm(grads_array)
-#    grad_diff = np.linalg.norm(grads_approx_array - grads_array)/(grads_approx_array_norm + grads_array_norm)
-#    
-#    return grad_diff
-
-
