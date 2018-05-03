@@ -66,8 +66,10 @@ def ForwardProp(X, parameters, hidden_func, output_func):
     Input
             - X : Matrix of input (n_x, m)
             - parameters : dictionnary of parameters W and b, for each layers
+            - hidden_func : Activation function to be used for the hidden layers
+            - output_func : Activation function to be used for the last layer
     Output
-            - AL : The prediction matrix (n_y, m)
+            - AL : Output matrix of last layer (n_y, m)
             - cache : Dictionnary of the A and Z, to use them during backprop
     '''
     L = len(parameters)//2
@@ -110,7 +112,8 @@ def ComputeCost(Y, AL, output_func):
     --------
     Input
             - Y : Target matrix (n_y, m)
-            - AL : Prediction matrix (n_y, m)
+            - AL : Output matrix of last layer (n_y, m)
+            - output_func : Activation function to be used for the last layer
     Output
             - cost : the cost function computed for Y and AL
     '''
@@ -129,16 +132,18 @@ def ComputeCost(Y, AL, output_func):
     return cost
 
 
-def BackProp(X, Y, AL, parameters, cache, output_func, hidden_func):
+def BackProp(X, Y, AL, parameters, cache, hidden_func, output_func):
     '''
     Compute the gradients of the cost for the parameters W, b of each layers
     --------
     Input
-            - X :
-            - Y :
-            - AL :
-            - parameters : 
-            - cache :
+            - X : Training data matrix of shape (n_x, m)
+            - Y : Target data matrix of shape (n_y, m)
+            - AL : Output from last layer
+            - parameters : Parameters of the model W and b
+            - cache : Cache data of Z and A
+            - hidden_func : Activation function to be used for the hidden layers
+            - output_func : Activation function to be used for the last layer
     Output
             - grads : dictionnary of the derivatives of the cost function
                       for each parameters
@@ -217,15 +222,46 @@ def UpdateParameters(parameters, grads, learning_rate):
     
     return parameters
 
-def NN_model(X, Y, hidden_units, hidden_func='tanh', output_func='sigmoid', \
-             epoch=10000, learning_rate=0.01, verbose=True, grad_check=False):
+def PreProcess_X_Y(X,y):
+    '''
+    Preprocess the data.
+    ----------
+    Input
+            - X : Input data of shape (m, n_x)
+            - Y : Input target of shape (m,)
+    Output
+            - X : New input data of shape (n_x, m)
+            - Y : New input target of shape (n_y, m)
+    '''
+    # get the number of features n_x and number of examples m of X
+    m = X.shape[0]
+    
+    # transform Y to a 2 dim array (m, n_y)
+    K = len(np.unique(y)) # get number of classes
+    if K==2:
+        Y = y.reshape(-1,1)    # reshape Y into (m,1)
+    if K>2:
+        Y_dummy = np.zeros((m, K))
+        for i in range(len(y)):
+            Y_dummy[i, int(y[i])] = 1   # Y_dummy : (m, K)
+        
+        Y = Y_dummy
+    
+    X, Y = X.T, Y.T
+    
+    return X, Y
+
+def NN_model(X, y, hidden_units, hidden_func='tanh', output_func='sigmoid', \
+             epoch=10000, learning_rate=0.01, verbose=True):
     '''
     Train a Neural Network of 3 layers (2 layers ReLU and 1 sigmoid for the output).
     ----------
     Input
             - X : input training dataset (m, n_x)
-            - Y : target of the training dataset (m, 1)
-            - layer_units : tuple of number of units for the 2 ReLU layers
+            - y : target of the training dataset (m,)
+            - hidden_units : list of number of units for the hidden layers
+            - hidden_func : Activation function to be used for the hidden layers
+            - output_func : Activation function to be used for the last layer
             - epoch : number of iteration
             - learning_rate : learning rate for the gradient descent
             - verbose : if True, print cost function value every 100 epoch
@@ -233,16 +269,15 @@ def NN_model(X, Y, hidden_units, hidden_func='tanh', output_func='sigmoid', \
             - parameters : dictionnary of the trained parameters W, b for each layers
     '''
     t0 = time.time()
-    # transpose X and Y
-    X = X.T
-    Y = Y.T
     
-    # get the number of features n_x and number of examples m of X
-    n_x, m = X.shape
-    # get the number of classes n_y
+    # reshape and transform X and y
+    X, Y = PreProcess_X_Y(X,y)
+    
+    # get architecture of the NN
+    n_x = X.shape[0]
     n_y = Y.shape[0]
-    
     n_units_list = [n_x] + hidden_units + [n_y]
+    
     # initialize the parameters
     parameters = InitializeParameters(n_units_list)
     
@@ -253,7 +288,7 @@ def NN_model(X, Y, hidden_units, hidden_func='tanh', output_func='sigmoid', \
         AL, cache = ForwardProp(X, parameters, hidden_func, output_func)
         
         # compute the back propagation
-        grads = BackProp(X, Y, AL, parameters, cache, output_func, hidden_func)
+        grads = BackProp(X, Y, AL, parameters, cache, hidden_func, output_func)
         
         # update the parameters
         parameters = UpdateParameters(parameters, grads, learning_rate)
@@ -265,13 +300,6 @@ def NN_model(X, Y, hidden_units, hidden_func='tanh', output_func='sigmoid', \
             
             if verbose and (i%1000 == 0):
                 print('Cost function after epoch {} : {}'.format(i, cost))
-        
-        if grad_check:
-            grad_diff = GradCheck(X, Y, parameters, grads, hidden_func, output_func, epsilon=1e-7)
-            print('Gradient evaluation :', grad_diff)
-            if i > 10:
-                print('OK if less than 1e-5')
-                break
                 
     print('Cost function after epoch {} : {}'.format(epoch, cost))
     print('Time : %.3f s' % (time.time()-t0))
@@ -299,62 +327,60 @@ def MakePrediction(X, parameters, hidden_func, output_func):
     
     if output_func=='softmax':
         
-        prediction = np.argmax(A3, axis=0)
-        Y_pred = np.zeros(A3.shape)
-        
-        for i in range(len(prediction)):
-            Y_pred[prediction[i], i] = 1
-            
+        Y_pred = np.argmax(A3, axis=0)
+
     if output_func=='sigmoid':
-        Y_pred = (A3 >0.5)*1
-        
-    Y_pred = Y_pred.T # transpose the prediction to get the usual form (m, n_y)
+        Y_pred = ((A3 >0.5)*1).reshape(-1)
     
     return Y_pred
 
-def GradCheck(X, Y, parameters, grads, hidden_func, output_func, epsilon=1e-7):
-    '''
-    Piece of crap, ugly and not working , do not use.
-    
-    Check if the gradient computed by backprop is correct
-    '''
-    grads_approx = {}
-    for key in parameters:
-        grads_approx[key] = np.zeros(parameters[key].shape)
-        n, m = parameters[key].shape
-        for i in range(n):
-            for j in range(m):
-                parameters_plus = parameters.copy()
-                parameters_minus = parameters.copy()
-                
-                parameters_plus[key] = parameters[key].copy()
-                parameters_minus[key] = parameters[key].copy()
-                
-                parameters_plus[key][i, j] +=  epsilon
-                parameters_minus[key][i, j] -=  epsilon
-                
-                AL_plus, _ = ForwardProp(X, parameters_plus, hidden_func, output_func)
-                cost_plus = ComputeCost(Y, AL_plus, output_func)
-                
-                AL_minus, _ = ForwardProp(X, parameters_minus, hidden_func, output_func)
-                cost_minus = ComputeCost(Y, AL_minus, output_func)
-                
-                grads_approx[key][i, j] = (cost_plus - cost_minus)/(2*epsilon)
-                
-    grads_approx_array = np.array([])
-    grads_array = np.array([])
-    L = len(parameters)//2
-    for l in range(1, L+1):
-        grads_approx_array = np.append(grads_approx_array, grads_approx['W'+str(l)].flatten())
-        grads_approx_array = np.append(grads_approx_array, grads_approx['b'+str(l)].flatten())
-        
-        grads_array = np.append(grads_array, grads['dW'+str(l)].flatten())
-        grads_array = np.append(grads_array, grads['db'+str(l)].flatten())
-    
-    grads_approx_array_norm = np.linalg.norm(grads_approx_array)
-    grads_array_norm = np.linalg.norm(grads_array)
-    grad_diff = np.linalg.norm(grads_approx_array - grads_array)/(grads_approx_array_norm + grads_array_norm)
-    
-    return grad_diff
+
+
+
+
+#def GradCheck(X, Y, parameters, grads, hidden_func, output_func, epsilon=1e-7):
+#    '''
+#    Piece of crap, ugly and not working , do not use.
+#    
+#    Check if the gradient computed by backprop is correct
+#    '''
+#    grads_approx = {}
+#    for key in parameters:
+#        grads_approx[key] = np.zeros(parameters[key].shape)
+#        n, m = parameters[key].shape
+#        for i in range(n):
+#            for j in range(m):
+#                parameters_plus = parameters.copy()
+#                parameters_minus = parameters.copy()
+#                
+#                parameters_plus[key] = parameters[key].copy()
+#                parameters_minus[key] = parameters[key].copy()
+#                
+#                parameters_plus[key][i, j] +=  epsilon
+#                parameters_minus[key][i, j] -=  epsilon
+#                
+#                AL_plus, _ = ForwardProp(X, parameters_plus, hidden_func, output_func)
+#                cost_plus = ComputeCost(Y, AL_plus, output_func)
+#                
+#                AL_minus, _ = ForwardProp(X, parameters_minus, hidden_func, output_func)
+#                cost_minus = ComputeCost(Y, AL_minus, output_func)
+#                
+#                grads_approx[key][i, j] = (cost_plus - cost_minus)/(2*epsilon)
+#                
+#    grads_approx_array = np.array([])
+#    grads_array = np.array([])
+#    L = len(parameters)//2
+#    for l in range(1, L+1):
+#        grads_approx_array = np.append(grads_approx_array, grads_approx['W'+str(l)].flatten())
+#        grads_approx_array = np.append(grads_approx_array, grads_approx['b'+str(l)].flatten())
+#        
+#        grads_array = np.append(grads_array, grads['dW'+str(l)].flatten())
+#        grads_array = np.append(grads_array, grads['db'+str(l)].flatten())
+#    
+#    grads_approx_array_norm = np.linalg.norm(grads_approx_array)
+#    grads_array_norm = np.linalg.norm(grads_array)
+#    grad_diff = np.linalg.norm(grads_approx_array - grads_array)/(grads_approx_array_norm + grads_array_norm)
+#    
+#    return grad_diff
 
 

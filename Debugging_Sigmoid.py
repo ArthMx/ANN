@@ -9,7 +9,6 @@ X = digits['data']/16 # normalize the values between 0 and 1
 Y = digits['target']
 Y = (Y == 1)*1  # target value =1 for digit 1, and 0 for all other digits
 
-Y = Y.reshape(-1, 1)
 print('X shape :', X.shape)
 print('Y shape :', Y.shape)
 

@@ -8,12 +8,6 @@ digits = load_digits()
 X = digits['data']/16 # normalize the values between 0 and 1
 Y = digits['target']
 
-# transform target values into dummy variables target
-Y_dummy = np.zeros((len(Y), 10))
-for i in range(len(Y)):
-    Y_dummy[i, Y[i]] = 1
-             
-Y = Y_dummy
 print('X shape :', X.shape)
 print('Y shape :', Y.shape)
 
