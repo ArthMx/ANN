@@ -20,15 +20,16 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 
 
 # set architecture
-batch_size = 64
-alpha = 0.2
-hidden_units = [50, 20]
-hidden_func='relu'
+batch_size = 256
+alpha = 0.5
+hidden_units = [100, 100, 50]
+hidden_func='tanh'
 output_func='softmax'
 
 
-NN_clf = MiniBatchANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, \
-                          batch_size=batch_size, output_func=output_func, epoch=1000, learning_rate=0.1, grad_check=False)
+NN_clf = AdamANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, \
+                          batch_size=batch_size, output_func=output_func, 
+                          epoch=200, learning_rate=0.01, learn_decay=0.0001, grad_check=False)
 
 NN_clf.fit(X_train, y_train)
 # compute train accuracy

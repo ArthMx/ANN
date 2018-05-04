@@ -14,7 +14,7 @@ import time
 class AdamANN_clf(BaseEstimator):
     
     def __init__(self, hidden_units, hidden_func='tanh', output_func='sigmoid', \
-                 alpha=0, epoch=1000, learning_rate=0.01, batch_size=256, beta1=0.9, beta2=0.999, 
+                 alpha=0, epoch=1000, learning_rate=0.01, learn_decay=0, batch_size=256, beta1=0.9, beta2=0.999, 
                  hot_start=False, verbose=True, grad_check=False):
         
         self.alpha = alpha
@@ -23,15 +23,15 @@ class AdamANN_clf(BaseEstimator):
         self.output_func = output_func
         self.epoch = epoch
         self.learning_rate = learning_rate
+        self.learn_decay = learn_decay
         self.batch_size = batch_size
         self.beta1 = beta1
         self.beta2 = beta2
         self.hot_start = hot_start
         self.verbose = verbose
         self.grad_check = grad_check
-        
-        self.v_grads = {}
-        self.s_grads = {}
+
+        self.L = len(hidden_units) + 1
         
     def fit(self, X, y):
         '''
@@ -43,13 +43,14 @@ class AdamANN_clf(BaseEstimator):
         output_func = self.output_func
         epoch = self.epoch
         learning_rate = self.learning_rate
+        learn_decay = self.learn_decay
         batch_size = self.batch_size
         hot_start = self.hot_start
         verbose = self.verbose
         grad_check = self.grad_check
         
         self.parameters = self.NN_model(X, y, hidden_units, hidden_func, output_func, \
-             alpha, epoch, learning_rate, batch_size, hot_start, verbose, grad_check)
+             alpha, epoch, learning_rate, learn_decay, batch_size, hot_start, verbose, grad_check)
         
         return self
     
@@ -280,7 +281,7 @@ class AdamANN_clf(BaseEstimator):
         
         return grads
     
-    def UpdateParameters(self, parameters, grads, learning_rate):
+    def UpdateParameters(self, parameters, grads, v_grads, s_grads, learning_rate, t):
         '''
         Update the parameters by gradient descent
         ---------
@@ -294,68 +295,63 @@ class AdamANN_clf(BaseEstimator):
         '''
         epsilon = 1e-8
         L = len(parameters)//2           # L number of layer
-        self.v_grads = self.MomentumGradDescent(grads)
-        self.s_grads = self.RMSprop(grads)
+        v_grads_corrected = self.MomentumGradDescent(grads, v_grads, t)
+        s_grads_corrected = self.RMSprop(grads, s_grads, t)
         
         for l in range(1, L+1):
-            parameters['W' + str(l)] -= learning_rate * self.v_grads['dW' + str(l)]
-            parameters['W' + str(l)] /= np.sqrt(self.s_grads['dW' + str(l)] + epsilon)
+            dW_Adam = v_grads_corrected['dW' + str(l)] / np.sqrt(s_grads_corrected['dW' + str(l)]) + epsilon
+            parameters['W' + str(l)] -= learning_rate * dW_Adam
             
-            parameters['b' + str(l)] -= learning_rate * self.v_grads['db' + str(l)]
-            parameters['b' + str(l)] /= np.sqrt(self.s_grads['db' + str(l)] + epsilon)
-        
-        return parameters
+            db_Adam = v_grads_corrected['db' + str(l)] / np.sqrt(s_grads_corrected['db' + str(l)]) + epsilon
+            parameters['b' + str(l)] -= learning_rate * db_Adam
+            
+        return parameters, v_grads, s_grads
     
-    def MomentumGradDescent(self, grads):
+    def InitializeAdamParameters(self):
+        s_grads = {}
+        v_grads = {}
+        for l in range(1, self.L+1):
+            s_grads['dW' + str(l)] = 0
+            s_grads['db' + str(l)] = 0
+            v_grads['dW' + str(l)] = 0
+            v_grads['db' + str(l)] = 0
+        
+        return v_grads, s_grads
+    
+    def MomentumGradDescent(self, grads, v_grads, t):
         '''
         Compute gradient with momentum
         '''
         beta1 = self.beta1
         L = len(grads)//2           # L number of layer
-        v_grads = self.v_grads
+        v_grads_corrected = {}
         
-        if self.n_iter == 1:
-            for l in range(1, L+1):
-                v_grads['dW' + str(l)] =  (1 - beta1) * grads['dW' + str(l)]
-                v_grads['dW' + str(l)] /= (1 - beta1**self.n_iter) # bias correction
-                
-                v_grads['db' + str(l)] = (1 - beta1) * grads['db' + str(l)]
-                v_grads['db' + str(l)] /= (1 - beta1**self.n_iter) # bias correction
-                
-        else:
-            for l in range(1, L+1):
-                v_grads['dW' + str(l)] = beta1 * v_grads['dW' + str(l)] + (1 - beta1) * grads['dW' + str(l)]
-                v_grads['dW' + str(l)] /= (1 - beta1**self.n_iter) # bias correction
-                
-                v_grads['db' + str(l)] = beta1 * v_grads['db' + str(l)] + (1 - beta1) * grads['db' + str(l)]
-                v_grads['db' + str(l)] /= (1 - beta1**self.n_iter) # bias correction
+        for l in range(1, L+1):
+            v_grads['dW' + str(l)] = beta1 * v_grads['dW' + str(l)] + (1 - beta1) * grads['dW' + str(l)]
+            v_grads_corrected['dW' + str(l)] = v_grads['dW' + str(l)] / (1 - beta1**t) # bias correction
+            
+            v_grads['db' + str(l)] = beta1 * v_grads['db' + str(l)] + (1 - beta1) * grads['db' + str(l)]
+            v_grads_corrected['db' + str(l)] = v_grads['db' + str(l)] / (1 - beta1**t) # bias correction
         
-        return v_grads
+        
+        return v_grads_corrected
     
-    def RMSprop(self, grads):
+    def RMSprop(self, grads, s_grads, t):
         '''
         Compute Root Mean Squared prop
         '''
-        L = len(grads)//2 
+        L = len(grads)//2
         beta2 = self.beta2
-        s_grads = self.s_grads
+        s_grads_corrected = {}
         
-        if self.n_iter == 1:
-            for l in range(1, L+1):
-                s_grads['dW' + str(l)] =  (1 - beta2) * grads['dW' + str(l)]**2
-                s_grads['dW' + str(l)] /= (1 - beta2**self.n_iter) # bias correction
-                
-                s_grads['db' + str(l)] = (1 - beta2) * grads['db' + str(l)]**2
-                s_grads['db' + str(l)] /= (1 - beta2**self.n_iter) # bias correction
-        else:
-            for l in range(1, L+1):
-                s_grads['dW' + str(l)] = beta2 * s_grads['dW' + str(l)] + (1 - beta2) * grads['dW' + str(l)]**2
-                s_grads['dW' + str(l)] /= (1 - beta2**self.n_iter) # bias correction
-                
-                s_grads['db' + str(l)] = beta2 * s_grads['db' + str(l)] + (1 - beta2) * grads['db' + str(l)]**2
-                s_grads['db' + str(l)] /= (1 - beta2**self.n_iter) # bias correction
+        for l in range(1, L+1):
+            s_grads['dW' + str(l)] = beta2 * s_grads['dW' + str(l)] + (1 - beta2) * grads['dW' + str(l)]**2
+            s_grads_corrected['dW' + str(l)] = s_grads['dW' + str(l)] / (1 - beta2**t) # bias correction
+            
+            s_grads['db' + str(l)] = beta2 * s_grads['db' + str(l)] + (1 - beta2) * grads['db' + str(l)]**2
+            s_grads_corrected['db' + str(l)] = s_grads['db' + str(l)] / (1 - beta2**t) # bias correction
         
-        return s_grads
+        return s_grads_corrected
     
     def PreProcess_X_Y(self, X, y):
         '''
@@ -415,7 +411,7 @@ class AdamANN_clf(BaseEstimator):
         return minibatches
     
     def NN_model(self, X, y, hidden_units, hidden_func, output_func, \
-             alpha, epoch, learning_rate, batch_size, hot_start, verbose, grad_check):
+             alpha, epoch, learning_rate, learn_decay, batch_size, hot_start, verbose, grad_check):
         '''
         Train a Neural Network of 3 layers (2 layers ReLU and 1 sigmoid for the output).
         ----------
@@ -444,12 +440,14 @@ class AdamANN_clf(BaseEstimator):
         # initialize the parameters
         if not hot_start:
             parameters = self.InitializeParameters(n_units_list, hidden_func)
+            v_grads, s_grads = self.InitializeAdamParameters()
             self.n_iter = 0
         if hot_start:
             try:
                 parameters = self.parameters
             except:
                 parameters = self.InitializeParameters(n_units_list, hidden_func)
+                v_grads, s_grads = self.InitializeAdamParameters()
                 self.n_iter = 0
                 
         if grad_check:
@@ -464,6 +462,7 @@ class AdamANN_clf(BaseEstimator):
         # initialize a list to plot the evolution of the cost function
         cost_list = []
         for i in range(epoch):
+            learning_rate /= 1 + learn_decay * i # decay of learning_rate
             for X, Y in minibatches:
                 self.n_iter += 1
                 
@@ -474,15 +473,17 @@ class AdamANN_clf(BaseEstimator):
                 grads = self.BackProp(X, Y, AL, parameters, cache, hidden_func, output_func, alpha)
                 
                 # update the parameters
-                parameters = self.UpdateParameters(parameters, grads, learning_rate)
+                t = self.n_iter
                 
-            if  i%100 == 0:
+                parameters, v_grads, s_grads = self.UpdateParameters(parameters, grads, v_grads, s_grads, learning_rate, t)
+                
+            if  i%5 == 0:
                 # compute the cost function
                 AL, _ = self.ForwardProp(X, parameters, hidden_func, output_func)
                 cost = self.ComputeCost(Y, AL, parameters, output_func, alpha)
                 cost_list.append(cost)
                 
-                if verbose and (i%100 == 0):
+                if verbose and (i%10 == 0):
                     print('Cost function after epoch {} : {}'.format(i, cost))
         
         
