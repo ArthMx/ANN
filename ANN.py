@@ -82,7 +82,7 @@ class ANN_clf(BaseEstimator):
         
         return softmax
     
-    def InitializeParameters(self, n_units_list):
+    def InitializeParameters(self, n_units_list, hidden_func):
         '''
         Initialize the parameters values W and b for each layers.
         --------
@@ -101,9 +101,14 @@ class ANN_clf(BaseEstimator):
             n_l = n_units_list[l]           # number of units in layer l
             
             # initialize the parameters values randomly for W and 0 for b
-            parameters['W' + str(l)] = np.random.randn(n_l, n_l_prev)*0.01
+            xavier_init = np.sqrt(1/n_l_prev)
+            parameters['W' + str(l)] = np.random.randn(n_l, n_l_prev) * xavier_init
+            if hidden_func=='relu':
+                parameters['W' + str(l)] * np.sqrt(2)
+                
             parameters['b' + str(l)] = np.zeros((n_l, 1))
-        
+            
+            
         return parameters
     
     def ForwardProp(self, X, parameters, hidden_func, output_func):
@@ -217,7 +222,7 @@ class ANN_clf(BaseEstimator):
         if output_func=='sigmoid':
             dZL = AL - Y
         if output_func=='softmax':
-            dZL = AL - Y #(AL - 1) * Y
+            dZL = AL - Y
         
         # get AL_prev to compute the gradients
         AL_prev = cache['A'+str(L-1)]
@@ -340,12 +345,12 @@ class ANN_clf(BaseEstimator):
         
         # initialize the parameters
         if not hot_start:
-            parameters = self.InitializeParameters(n_units_list)
+            parameters = self.InitializeParameters(n_units_list, hidden_func)
         if hot_start:
             try:
                 parameters = self.parameters
             except:
-                parameters = self.InitializeParameters(n_units_list)
+                parameters = self.InitializeParameters(n_units_list, hidden_func)
                 
         if grad_check:
                 AL, cache = self.ForwardProp(X, parameters, hidden_func, output_func)
