@@ -18,7 +18,7 @@ X = normalizer.fit_transform(X)
 batch_size = 128
 alpha = 0.1
 hidden_units = [30,50,20]
-hidden_func='relu'
+hidden_func='tanh'
 output_func='softmax'
 
 NN_clf = AdamANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, \

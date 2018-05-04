@@ -23,7 +23,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 batch_size = 256
 alpha = 0.5
 hidden_units = [100, 100, 50]
-hidden_func='tanh'
+hidden_func='relu'
 output_func='softmax'
 
 

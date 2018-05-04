@@ -19,7 +19,7 @@ X = normalizer.fit_transform(X)
 batch_size = 128
 alpha = 0.1
 hidden_units = [20,10]
-hidden_func='tanh'
+hidden_func='relu'
 output_func='sigmoid'
 
 NN_clf = AdamANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, \

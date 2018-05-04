@@ -49,7 +49,7 @@ class AdamANN_clf(BaseEstimator):
         verbose = self.verbose
         grad_check = self.grad_check
         
-        self.parameters = self.NN_model(X, y, hidden_units, hidden_func, output_func, \
+        self.parameters, self.v_grads, self.s_grads = self.NN_model(X, y, hidden_units, hidden_func, output_func, \
              alpha, epoch, learning_rate, learn_decay, batch_size, hot_start, verbose, grad_check)
         
         return self
@@ -299,10 +299,10 @@ class AdamANN_clf(BaseEstimator):
         s_grads_corrected = self.RMSprop(grads, s_grads, t)
         
         for l in range(1, L+1):
-            dW_Adam = v_grads_corrected['dW' + str(l)] / np.sqrt(s_grads_corrected['dW' + str(l)]) + epsilon
+            dW_Adam = v_grads_corrected['dW' + str(l)] / (np.sqrt(s_grads_corrected['dW' + str(l)]) + epsilon)
             parameters['W' + str(l)] -= learning_rate * dW_Adam
             
-            db_Adam = v_grads_corrected['db' + str(l)] / np.sqrt(s_grads_corrected['db' + str(l)]) + epsilon
+            db_Adam = v_grads_corrected['db' + str(l)] / (np.sqrt(s_grads_corrected['db' + str(l)]) + epsilon)
             parameters['b' + str(l)] -= learning_rate * db_Adam
             
         return parameters, v_grads, s_grads
@@ -445,6 +445,8 @@ class AdamANN_clf(BaseEstimator):
         if hot_start:
             try:
                 parameters = self.parameters
+                v_grads = self.v_grads 
+                s_grads = self.s_grads
             except:
                 parameters = self.InitializeParameters(n_units_list, hidden_func)
                 v_grads, s_grads = self.InitializeAdamParameters()
@@ -483,7 +485,7 @@ class AdamANN_clf(BaseEstimator):
                 cost = self.ComputeCost(Y, AL, parameters, output_func, alpha)
                 cost_list.append(cost)
                 
-                if verbose and (i%10 == 0):
+                if verbose and (i%(epoch//10) == 0):
                     print('Cost function after epoch {} : {}'.format(i, cost))
         
         
@@ -499,7 +501,7 @@ class AdamANN_clf(BaseEstimator):
         plt.xlabel('Number of iterations, by hundreds')
         plt.ylabel('Cost Function')
         
-        return parameters
+        return parameters, v_grads, s_grads
     
     def MakePrediction(self, X, parameters, hidden_func, output_func):
         '''
