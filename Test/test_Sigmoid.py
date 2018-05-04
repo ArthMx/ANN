@@ -2,12 +2,16 @@
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import StandardScaler
 
 digits = load_digits()
 
-X = digits['data']/16 # normalize the values between 0 and 1
+X = digits['data']
 y = digits['target']
 y = (y == 1)*1  # target value =1 for digit 1, and 0 for all other digits
+
+normalizer = StandardScaler()
+X = normalizer.fit_transform(X)
 
 print('X shape :', X.shape)
 print('Y shape :', y.shape)

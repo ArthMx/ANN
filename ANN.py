@@ -249,11 +249,11 @@ class ANN_clf(BaseEstimator):
             Zl = cache['Z' + str(l)]
             if hidden_func=='sigmoid':
                 sig = self.Sigmoid(Zl)
-                dZl = sig * (1 - sig)
+                dZl = sig * (1 - sig) * dAl
             if hidden_func=='tanh':
                 dZl = (1 - np.tanh(Zl)**2) * dAl
             if hidden_func=='relu':
-                dZl = (Zl > 0)*1
+                dZl = ((Zl > 0)*1) * dAl
             
             # get Al_prev
             if l>1:
@@ -457,16 +457,15 @@ class ANN_clf(BaseEstimator):
             grad = (cost_plus - cost_minus)/(2*epsilon)
             
             vec_grads_approx[i] = grad
-            print(keys[i], vec_grads_approx[i] - vec_grads[i])
+            #print(keys[i], vec_grads_approx[i] - vec_grads[i])
         
         
         assert vec_grads.shape == vec_grads_approx.shape
         
-        diff_norm = np.linalg.norm(vec_grads_approx - vec_grads)
-        vec_grads_norm = np.linalg.norm(vec_grads)
-        vec_grads_approx_norm = np.linalg.norm(vec_grads_approx)
+        num = np.linalg.norm(vec_grads_approx - vec_grads)
+        denum = np.linalg.norm(vec_grads_approx + vec_grads)
         
-        error_ratio = diff_norm / (vec_grads_norm + vec_grads_approx_norm)
+        error_ratio = num / denum
         
         return error_ratio
     

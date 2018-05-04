@@ -2,11 +2,15 @@
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import StandardScaler
 
 digits = load_digits()
 
-X = digits['data']/16 # normalize the values between 0 and 1
+X = digits['data']
 y = digits['target']
+
+normalizer = StandardScaler()
+X = normalizer.fit_transform(X)
 
 print('X shape :', X.shape)
 print('Y shape :', y.shape)
@@ -16,14 +20,14 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 
 
 # set architecture
-alpha = 0.1
-hidden_units = [50, 20]
-hidden_func='tanh'
+alpha = 0.2
+hidden_units = [50, 30]
+hidden_func='relu'
 output_func='softmax'
 
 
 NN_clf = ANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, \
-                 output_func=output_func, epoch=5000, learning_rate=0.1, grad_check=True)
+                 output_func=output_func, epoch=5000, learning_rate=0.1, grad_check=False)
 
 NN_clf.fit(X_train, y_train)
 # compute train accuracy

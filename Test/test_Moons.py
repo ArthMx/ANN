@@ -9,8 +9,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_blobs, make_moons
 from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
 
 X,y = make_moons(500, noise=0.3)
+
+normalizer = StandardScaler()
+X = normalizer.fit_transform(X)
 
 alpha = 0.5
 hidden_units = [10,5]
