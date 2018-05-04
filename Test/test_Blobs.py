@@ -10,18 +10,19 @@ from sklearn.datasets import make_blobs, make_moons
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
 
-X,y = make_blobs(500,2,5)
+X,y = make_blobs(5000,2,5)
 
 normalizer = StandardScaler()
 X = normalizer.fit_transform(X)
 
-alpha = 0.5
-hidden_units = [20,5]
+batch_size = 256
+alpha = 0.1
+hidden_units = [30,50,20]
 hidden_func='relu'
 output_func='softmax'
 
-NN_clf = ANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, 
-                 output_func=output_func, epoch=5000, learning_rate=0.1, grad_check=True)
+NN_clf = MiniBatchANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, \
+                          batch_size=batch_size, output_func=output_func, epoch=1000, learning_rate=0.1, grad_check=False)
 
 NN_clf.fit(X, y)
 
