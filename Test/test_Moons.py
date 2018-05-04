@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu May  3 15:23:47 2018
+Created on Fri May  4 15:49:42 2018
 
 @author: Arthur
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_blobs, make_moons
 from sklearn.metrics import accuracy_score
 
-X,y = make_blobs(500,2,5)
+X,y = make_moons(500, noise=0.3)
 
 alpha = 0.5
 hidden_units = [10,5]
 hidden_func='tanh'
-output_func='softmax'
+output_func='sigmoid'
 
 NN_clf = ANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, 
                  output_func=output_func, epoch=5000, learning_rate=0.1, grad_check=True)

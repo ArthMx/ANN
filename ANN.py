@@ -134,7 +134,8 @@ class ANN_clf(BaseEstimator):
             
             # compute forward propagation
             Zl = Wl.dot(Al_prev) + bl
-                    
+            if hidden_func=='sigmoid':
+                Al = self.Sigmoid(Zl)
             if hidden_func=='tanh':
                 Al = np.tanh(Zl)
             if hidden_func=='relu':
@@ -246,6 +247,9 @@ class ANN_clf(BaseEstimator):
             
             # compute dZl
             Zl = cache['Z' + str(l)]
+            if hidden_func=='sigmoid':
+                sig = self.Sigmoid(Zl)
+                dZl = sig * (1 - sig)
             if hidden_func=='tanh':
                 dZl = (1 - np.tanh(Zl)**2) * dAl
             if hidden_func=='relu':
@@ -423,7 +427,10 @@ class ANN_clf(BaseEstimator):
         '''
         '''
         
-        epsilon = 1e-7
+        epsilon = 1e-5
+        
+        # Gradient computed by backprop
+        vec_grads = self.gradients_to_vector(grads)
         
         vec_parameters, keys = self.dictionary_to_vector(parameters)
         
@@ -436,7 +443,6 @@ class ANN_clf(BaseEstimator):
             dict_parameters_plus = self.vector_to_dictionary(vec_parameters_plus, n_units_list)
             
             AL_plus, _ = self.ForwardProp(X, dict_parameters_plus, hidden_func, output_func)
-            
             cost_plus = self.ComputeCost(Y, AL_plus, dict_parameters_plus, output_func, alpha)
 
             # Do the same for cost_minus
@@ -451,9 +457,8 @@ class ANN_clf(BaseEstimator):
             grad = (cost_plus - cost_minus)/(2*epsilon)
             
             vec_grads_approx[i] = grad
+            print(keys[i], vec_grads_approx[i] - vec_grads[i])
         
-        # Gradient computed by backprop
-        vec_grads = self.gradients_to_vector(grads)
         
         assert vec_grads.shape == vec_grads_approx.shape
         
