@@ -9,14 +9,16 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import make_blobs, make_moons
 from sklearn.metrics import accuracy_score
 
-X,y = make_blobs(500,2,10)
-#X,y = make_moons(500,noise=0.3)
+#X,y = make_blobs(500,2,5)
+X,y = make_moons(500, noise=0.3)
 
-hidden_units = [10, 5]
+alpha = 0
+hidden_units = [5,5]
 hidden_func='tanh'
-output_func='softmax'
+output_func='sigmoid'
 
-NN_clf = ANN_clf(hidden_units, hidden_func, output_func, epoch=10000, learning_rate=1)
+NN_clf = ANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, 
+                 output_func=output_func, epoch=20000, learning_rate=0.1, grad_check=True)
 
 NN_clf.fit(X, y)
 

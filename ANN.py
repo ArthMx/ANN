@@ -14,7 +14,7 @@ import time
 class ANN_clf(BaseEstimator):
     
     def __init__(self, hidden_units, hidden_func='tanh', output_func='sigmoid', \
-                 alpha=0, epoch=10000, learning_rate=0.01, hot_start=False, verbose=True):
+                 alpha=0, epoch=10000, learning_rate=0.01, hot_start=False, verbose=True, grad_check=False):
         
         self.alpha = alpha
         self.hidden_units = hidden_units
@@ -24,6 +24,7 @@ class ANN_clf(BaseEstimator):
         self.learning_rate = learning_rate
         self.hot_start = hot_start
         self.verbose = verbose
+        self.grad_check = grad_check
         
     def fit(self, X, y):
         '''
@@ -37,9 +38,10 @@ class ANN_clf(BaseEstimator):
         learning_rate = self.learning_rate
         hot_start = self.hot_start
         verbose = self.verbose
+        grad_check = self.grad_check
         
         self.parameters = self.NN_model(X, y, hidden_units, hidden_func, output_func, \
-             alpha, epoch, learning_rate, hot_start, verbose)
+             alpha, epoch, learning_rate, hot_start, verbose, grad_check)
         
         return self
     
@@ -274,7 +276,6 @@ class ANN_clf(BaseEstimator):
                 - parameters : parameters updated after gradient descent
         '''
         L = len(parameters)//2           # L number of layer
-        
         for l in range(1, L+1):
             parameters['W' + str(l)] -= learning_rate * grads['dW' + str(l)]
             parameters['b' + str(l)] -= learning_rate * grads['db' + str(l)]
@@ -311,7 +312,7 @@ class ANN_clf(BaseEstimator):
         return X, Y
     
     def NN_model(self, X, y, hidden_units, hidden_func, output_func, \
-             alpha, epoch, learning_rate, hot_start, verbose):
+             alpha, epoch, learning_rate, hot_start, verbose, grad_check):
         '''
         Train a Neural Network of 3 layers (2 layers ReLU and 1 sigmoid for the output).
         ----------
@@ -345,7 +346,13 @@ class ANN_clf(BaseEstimator):
                 parameters = self.parameters
             except:
                 parameters = self.InitializeParameters(n_units_list)
-        
+                
+        if grad_check:
+                AL, cache = self.ForwardProp(X, parameters, hidden_func, output_func)
+                grads = self.BackProp(X, Y, AL, parameters, cache, hidden_func, output_func, alpha)
+                error_ratio = self.GradCheck(X, Y, parameters, grads, hidden_func, output_func, alpha, n_units_list)
+                print('Verification of gradient : ', error_ratio)
+            
         # initialize a list to plot the evolution of the cost function
         cost_list = []
         for i in range(epoch):        
@@ -360,13 +367,16 @@ class ANN_clf(BaseEstimator):
             
             if  i%100 == 0:
                 # compute the cost function
+                AL, _ = self.ForwardProp(X, parameters, hidden_func, output_func)
                 cost = self.ComputeCost(Y, AL, parameters, output_func, alpha)
                 cost_list.append(cost)
                 
                 if verbose and (i%1000 == 0):
                     print('Cost function after epoch {} : {}'.format(i, cost))
-                    
-        print('Cost function after epoch {} : {}'.format(epoch, cost))
+                
+        cost = self.ComputeCost(Y, AL, parameters, output_func, alpha)
+        cost_list.append(cost)        
+        print('Cost function after epoch {} : {}'.format(i+1, cost))
         print('Time : %.3f s' % (time.time()-t0))
         
         # print the cost function for each iterations
@@ -400,55 +410,120 @@ class ANN_clf(BaseEstimator):
         
         return Y_pred
 
+
 ################################
-def dictionary_to_vector(parameters):
-    """
-    Roll all our parameters dictionary into a single vector satisfying our specific required shape.
-    """
-    keys = []
-    count = 0
-    for key in ["W1", "b1", "W2", "b2", "W3", "b3"]:
+
+
+    def GradCheck(self, X, Y, parameters, grads, hidden_func, output_func, alpha, n_units_list):
+        '''
+        '''
         
-        # flatten parameter
-        new_vector = np.reshape(parameters[key], (-1,1))
-        keys = keys + [key]*new_vector.shape[0]
+        epsilon = 1e-7
         
-        if count == 0:
-            theta = new_vector
-        else:
-            theta = np.concatenate((theta, new_vector), axis=0)
-        count = count + 1
+        vec_parameters, keys = self.dictionary_to_vector(parameters)
+        
+        vec_grads_approx = np.zeros(vec_parameters.shape)
+        for i in range(len(vec_parameters)):
+            
+            # Add epsilon to one element of the parameters
+            vec_parameters_plus = vec_parameters.copy()
+            vec_parameters_plus[i] += epsilon
+            dict_parameters_plus = self.vector_to_dictionary(vec_parameters_plus, n_units_list)
+            
+            AL_plus, _ = self.ForwardProp(X, dict_parameters_plus, hidden_func, output_func)
+            
+            cost_plus = self.ComputeCost(Y, AL_plus, dict_parameters_plus, output_func, alpha)
 
-    return theta, keys
-
-def vector_to_dictionary(theta):
-    """
-    Unroll all our parameters dictionary from a single vector satisfying our specific required shape.
-    """
-    parameters = {}
-    parameters["W1"] = theta[:20].reshape((5,4))
-    parameters["b1"] = theta[20:25].reshape((5,1))
-    parameters["W2"] = theta[25:40].reshape((3,5))
-    parameters["b2"] = theta[40:43].reshape((3,1))
-    parameters["W3"] = theta[43:46].reshape((1,3))
-    parameters["b3"] = theta[46:47].reshape((1,1))
-
-    return parameters
-
-def gradients_to_vector(gradients):
-    """
-    Roll all our gradients dictionary into a single vector satisfying our specific required shape.
-    """
+            # Do the same for cost_minus
+            vec_parameters_minus = vec_parameters.copy()
+            vec_parameters_minus[i] -= epsilon
+            dict_parameters_minus = self.vector_to_dictionary(vec_parameters_minus, n_units_list)
+            
+            AL_minus, _ = self.ForwardProp(X, dict_parameters_minus, hidden_func, output_func)
+            
+            cost_minus = self.ComputeCost(Y, AL_minus, dict_parameters_minus, output_func, alpha)
+        
+            grad = (cost_plus - cost_minus)/(2*epsilon)
+            
+            vec_grads_approx[i] = grad
+        
+        # Gradient computed by backprop
+        vec_grads = self.gradients_to_vector(grads)
+        
+        assert vec_grads.shape == vec_grads_approx.shape
+        
+        diff_norm = np.linalg.norm(vec_grads_approx - vec_grads)
+        vec_grads_norm = np.linalg.norm(vec_grads)
+        vec_grads_approx_norm = np.linalg.norm(vec_grads_approx)
+        
+        error_ratio = diff_norm / (vec_grads_norm + vec_grads_approx_norm)
+        
+        return error_ratio
     
-    count = 0
-    for key in ["dW1", "db1", "dW2", "db2", "dW3", "db3"]:
-        # flatten parameter
-        new_vector = np.reshape(gradients[key], (-1,1))
-        
-        if count == 0:
-            theta = new_vector
-        else:
-            theta = np.concatenate((theta, new_vector), axis=0)
-        count = count + 1
+    
+    def dictionary_to_vector(self, parameters):
+        """
+        Roll all our parameters dictionary into a single vector satisfying our specific required shape.
+        """
+        count = 0
+        L = len(parameters)//2
+        keys = []
+        for l in range(1, L+1):
+            for par in ('W', 'b'):
+                key = par + str(l)
 
-    return theta
+                # flatten parameter
+                new_vector = np.reshape(parameters[key], (-1))
+                
+                if count == 0:
+                    theta = new_vector
+                else:
+                    theta = np.concatenate((theta, new_vector))
+                count = count + 1
+                
+                for i in new_vector:
+                    keys.append(key)
+    
+        return theta, keys
+    
+    def vector_to_dictionary(self, theta, n_units_list):
+        """
+        Unroll all our parameters dictionary from a single vector satisfying our specific required shape.
+        """
+        parameters = {}
+        n2 = 0
+        L = len(n_units_list) - 1
+        for l in range(1, L+1):
+            n_l_prev = n_units_list[l-1]
+            n_l = n_units_list[l]
+            
+            n0 = n2
+            n1 = n0 + n_l * n_l_prev
+            n2 = n1 + n_l
+            
+            parameters['W'+str(l)] = theta[n0:n1].reshape(n_l, n_l_prev)
+            parameters['b'+str(l)] = theta[n1:n2].reshape(n_l, 1)
+
+        return parameters
+    
+    def gradients_to_vector(self, grads):
+        """
+        Roll all our gradients dictionary into a single vector satisfying our specific required shape.
+        """
+        
+        count = 0
+        L = len(grads)//2
+        
+        for l in range(1, L+1):
+            for par in ('dW', 'db'):
+                key = par + str(l)
+                # flatten parameter
+                new_vector = np.reshape(grads[key], (-1))
+                
+                if count == 0:
+                    theta = new_vector
+                else:
+                    theta = np.concatenate((theta, new_vector))
+                count = count + 1
+    
+        return theta
