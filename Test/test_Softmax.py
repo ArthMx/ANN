@@ -21,13 +21,13 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 
 # set architecture
 alpha = 0.2
-hidden_units = [50, 30]
+hidden_units = [50, 20]
 hidden_func='relu'
 output_func='softmax'
 
 
 NN_clf = ANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, \
-                 output_func=output_func, epoch=5000, learning_rate=0.1, grad_check=False)
+                 output_func=output_func, epoch=5000, learning_rate=0.1, grad_check=True)
 
 NN_clf.fit(X_train, y_train)
 # compute train accuracy

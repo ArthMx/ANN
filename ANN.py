@@ -170,7 +170,7 @@ class ANN_clf(BaseEstimator):
         Output
                 - cost : the cost function computed for Y and AL
         '''
-        n_y, m = Y.shape
+        m = Y.shape[1]
         
         
         
@@ -182,7 +182,7 @@ class ANN_clf(BaseEstimator):
         if output_func=='softmax':
             loss = - Y * np.log(AL)
             # sum the loss through the m examples
-            cost = np.sum(loss)/(n_y*m)
+            cost = np.sum(loss)/m
         
         # compute regularization part
         if alpha != 0:
@@ -427,7 +427,7 @@ class ANN_clf(BaseEstimator):
         '''
         '''
         
-        epsilon = 1e-5
+        epsilon = 1e-7
         
         # Gradient computed by backprop
         vec_grads = self.gradients_to_vector(grads)
@@ -457,11 +457,11 @@ class ANN_clf(BaseEstimator):
             grad = (cost_plus - cost_minus)/(2*epsilon)
             
             vec_grads_approx[i] = grad
-            #print(keys[i], vec_grads_approx[i] - vec_grads[i])
+            #print(keys[i], vec_grads_approx[i] - vec_grads[i], vec_grads_approx[i], vec_grads[i])
         
         
         assert vec_grads.shape == vec_grads_approx.shape
-        
+
         num = np.linalg.norm(vec_grads_approx - vec_grads)
         denum = np.linalg.norm(vec_grads_approx + vec_grads)
         
