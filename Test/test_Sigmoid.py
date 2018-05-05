@@ -25,11 +25,10 @@ batch_size = 64
 alpha = 0.5
 hidden_units = [50,50]
 hidden_func='tanh'
-output_func='sigmoid'
 
-NN_clf = AdamANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, \
-                          batch_size=batch_size, output_func=output_func, 
-                          epoch=100, learning_rate=0.001, learn_decay=0.0001, grad_check=False)
+NN_clf = AdamANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, 
+                          batch_size=batch_size, epoch=100, learning_rate=0.001, 
+                          learn_decay=1, grad_check=False)
 
 NN_clf.fit(X_train, y_train)
 # compute train accuracy

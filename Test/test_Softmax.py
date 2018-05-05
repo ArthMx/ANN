@@ -25,12 +25,11 @@ batch_size = 256
 alpha = 0.5
 hidden_units = [100, 100, 50]
 hidden_func='relu'
-output_func='softmax'
+learn_decay = 10
 
-
-NN_clf = AdamANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, \
-                          batch_size=batch_size, output_func=output_func, 
-                          epoch=200, learning_rate=0.01, learn_decay=0.0001, grad_check=False)
+NN_clf = AdamANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func,
+                          batch_size=batch_size, epoch=200, learning_rate=0.01, 
+                          learn_decay=learn_decay, grad_check=False)
 
 NN_clf.fit(X_train, y_train)
 # compute train accuracy

@@ -12,18 +12,19 @@ class AdamANN_clf(BaseEstimator):
     Architecture of the NN : 
     (Sigmoid or Tanh or ReLU) x N-1 times + (Sigmoid or Softmax) for output.
     
+    The last layer's activation function is chosen automatically.
     -------------------------------------------------------------------------
     Hyperparameters
     -------------------------------------------------------------------------
         - hidden_units : List of number of units for the hidden layers
         - hidden_func : Activation function to be used for the hidden layers,
                         'sigmoid', 'tanh' or 'relu'
-        - output_func : Activation function to be used for the last layer,
-                        'sigmoid' or 'softmax'
         - alpha : Regularization parameter of weight decay (l2)
         - epoch : Number of iteration through the training dataset
         - learning_rate : Learning rate for the gradient descent
-        - learn_decay : Decay rate of the learning_rate parameter
+        - learn_decay : Decay rate of the learning_rate parameter, if set to x
+                    learning_rate will be decreased linearly to 1/x of his 
+                    original value
         - batch_size : Size of the mini-batch for splitting into batches the 
                         training data for training
         - beta1 : Parameter for weight averaging the gradient descent
@@ -47,14 +48,13 @@ class AdamANN_clf(BaseEstimator):
                 Output
                     - y_pred : Predicted labels for X (m,)
     '''
-    def __init__(self, hidden_units, hidden_func='tanh', output_func='sigmoid', \
-                 alpha=0, epoch=100, learning_rate=0.01, learn_decay=0, batch_size=256, beta1=0.9, beta2=0.999, 
-                 hot_start=False, verbose=True, grad_check=False):
+    def __init__(self, hidden_units, hidden_func='relu', alpha=0, epoch=100, 
+                 learning_rate=0.01, learn_decay=0, batch_size=256, beta1=0.9, 
+                 beta2=0.999, hot_start=False, verbose=True, grad_check=False):
         
         self.alpha = alpha
         self.hidden_units = hidden_units
         self.hidden_func = hidden_func
-        self.output_func = output_func
         self.epoch = epoch
         self.learning_rate = learning_rate
         self.learn_decay = learn_decay
@@ -74,7 +74,6 @@ class AdamANN_clf(BaseEstimator):
         alpha = self.alpha
         hidden_units = self.hidden_units
         hidden_func = self.hidden_func
-        output_func = self.output_func
         epoch = self.epoch
         learning_rate = self.learning_rate
         learn_decay = self.learn_decay
@@ -83,7 +82,7 @@ class AdamANN_clf(BaseEstimator):
         verbose = self.verbose
         grad_check = self.grad_check
         
-        self.parameters, self.v_grads, self.s_grads = self.NN_model(X, y, hidden_units, hidden_func, output_func, \
+        self.parameters, self.v_grads, self.s_grads = self.NN_model(X, y, hidden_units, hidden_func,
              alpha, epoch, learning_rate, learn_decay, batch_size, hot_start, verbose, grad_check)
         
         return self
@@ -420,14 +419,17 @@ class AdamANN_clf(BaseEstimator):
         # transform Y to a 2 dim array (m, n_y)
         K = len(np.unique(y)) # get number of classes
         if K==2:
+            self.output_func = 'sigmoid'     # set activation function for last layer
             Y = y.reshape(-1,1)    # reshape Y into (m,1)
+            
         if K>2:
+            self.output_func = 'softmax'  # set activation function for last layer
             Y_dummy = np.zeros((m, K))
             for i in range(len(y)):
                 Y_dummy[i, int(y[i])] = 1   # Y_dummy : (m, K)
             
             Y = Y_dummy
-        
+            
         X, Y = X.T, Y.T
         
         return X, Y
@@ -460,7 +462,7 @@ class AdamANN_clf(BaseEstimator):
             
         return minibatches
     
-    def NN_model(self, X, y, hidden_units, hidden_func, output_func, \
+    def NN_model(self, X, y, hidden_units, hidden_func, \
              alpha, epoch, learning_rate, learn_decay, batch_size, hot_start, verbose, grad_check):
         '''
         Train a Neural Network of 3 layers (2 layers ReLU and 1 sigmoid for the output).
@@ -492,6 +494,7 @@ class AdamANN_clf(BaseEstimator):
             parameters = self.InitializeParameters(n_units_list, hidden_func)
             v_grads, s_grads = self.InitializeAdamParameters()
             self.n_iter = 0
+        
         if hot_start:
             try:
                 parameters = self.parameters
@@ -501,12 +504,17 @@ class AdamANN_clf(BaseEstimator):
                 parameters = self.InitializeParameters(n_units_list, hidden_func)
                 v_grads, s_grads = self.InitializeAdamParameters()
                 self.n_iter = 0
-                
+        
+        # set output function (set during InitializeParameters)        
+        output_func = self.output_func  
+        
         if grad_check:
                 AL, cache = self.ForwardProp(X, parameters, hidden_func, output_func)
                 grads = self.BackProp(X, Y, AL, parameters, cache, hidden_func, output_func, alpha)
                 error_ratio = self.GradCheck(X, Y, parameters, grads, hidden_func, output_func, alpha, n_units_list)
                 print('Verification of gradient : ', error_ratio)
+        
+        
         
         # split data in mini batches of size batch_size
         minibatches = self.MakeMiniBatches(X, Y, batch_size)
@@ -530,7 +538,7 @@ class AdamANN_clf(BaseEstimator):
         x_iter = [] # to keep count of the iteration when cost is computed, for plotting
         learning_rate0 = learning_rate
         for i in range(epoch):
-            learning_rate = learning_rate0 / (1 + learn_decay * i) # decay of learning_rate
+            learning_rate = learning_rate0 / (1 + learn_decay*i/epoch) # decay of learning_rate
             for X, Y in minibatches:
                 self.n_iter += 1
                 
@@ -585,12 +593,11 @@ class AdamANN_clf(BaseEstimator):
         A3, _ = self.ForwardProp(X, parameters, hidden_func, output_func)
         
         if output_func=='softmax':
-            
             y_pred = np.argmax(A3, axis=0)
     
         if output_func=='sigmoid':
             y_pred = ((A3 >0.5)*1).reshape(-1)
-        
+            
         return y_pred
 
     def GradCheck(self, X, Y, parameters, grads, hidden_func, output_func, alpha, n_units_list):

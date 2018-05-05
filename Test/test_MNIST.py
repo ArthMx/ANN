@@ -39,17 +39,16 @@ X_test = normalizer.transform(X_test)
 
 
 # set hyperparameters
-hidden_units = [800,800]
+hidden_units = [50]
 hidden_func = 'relu'
-output_func = 'softmax'
 alpha = 1
 epoch = 30
 learning_rate = 0.01
-learn_decay = 1
+learn_decay = 20
 batch_size = 512
 
-AdamNN = AdamANN_clf(hidden_units, hidden_func, output_func, 
-                     alpha, epoch, learning_rate, learn_decay, batch_size, hot_start=True)
+AdamNN = AdamANN_clf(hidden_units, hidden_func, alpha, epoch, learning_rate, 
+                     learn_decay, batch_size, hot_start=True)
 
 AdamNN.fit(X_train, y_train)
 
