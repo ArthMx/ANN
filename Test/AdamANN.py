@@ -102,7 +102,14 @@ class AdamANN_clf(BaseEstimator):
         hidden_func = self.hidden_func
         output_func = self.output_func
         
+        # important to not use dropout for prediction !
+        p_dropout_temp = self.p_dropout
+        self.p_dropout = 0
+        
         y_pred = self.MakePrediction(X, parameters, hidden_func, output_func)
+        
+        # reset p_dropout to the initial value
+        self.p_dropout = p_dropout_temp
         
         return y_pred
     
@@ -221,6 +228,10 @@ class AdamANN_clf(BaseEstimator):
             AL = self.Softmax(ZL)
         if output_func=='sigmoid':
             AL = self.Sigmoid(ZL)
+            
+        # use drop out if p_dropout > 1
+        if self.p_dropout > 0:
+            AL = self.Dropout(AL)
             
         return AL, cache
     
@@ -578,6 +589,10 @@ class AdamANN_clf(BaseEstimator):
                 self.parameters, self.v_grads, self.s_grads = parameters, v_grads, s_grads
             
             if  i%cost_step == 0:
+                # important to not use dropout for prediction !
+                p_dropout_temp = self.p_dropout
+                self.p_dropout = 0
+                
                 # compute the cost function
                 AL, _ = self.ForwardProp(X, parameters, hidden_func, output_func)
                 cost = self.ComputeCost(Y, AL, parameters, output_func, alpha)
@@ -586,6 +601,8 @@ class AdamANN_clf(BaseEstimator):
                 
                 if verbose and (i%print_step == 0):
                     print('Cost function after epoch {} : {}'.format(i, cost))
+                
+                self.p_dropout = p_dropout_temp
         
         self.learning_rate = learning_rate # update self.learning_rate for hot start
         
