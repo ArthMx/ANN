@@ -18,13 +18,13 @@ X = normalizer.fit_transform(X)
 
 batch_size = 128
 alpha = 0.1
-hidden_units = [20,10]
+hidden_units = [50,50]
 hidden_func='relu'
 output_func='sigmoid'
 
 NN_clf = AdamANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, \
                           batch_size=batch_size, output_func=output_func, 
-                          epoch=1000, learning_rate=0.001, grad_check=False)
+                          epoch=50, learning_rate=0.01, grad_check=False)
 
 NN_clf.fit(X, y)
 

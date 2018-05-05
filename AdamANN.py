@@ -1,12 +1,14 @@
 '''
 Created 02/05/2018
 
-ANN with N layers and Softmax or sigmoid as the last layer.
+ANN classifier with N layers, using Adam optimization and mini-batch 
+gradient descent.
 
 Architecture of the NN : 
-(Tanh or ReLU) x N-1 times + (Softmax or sigmoid) for output
+(Sigmoid or Tanh or ReLU) x N-1 times + (Sigmoid or Softmax) for output
 '''
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator
 import time
@@ -355,15 +357,31 @@ class AdamANN_clf(BaseEstimator):
     
     def PreProcess_X_Y(self, X, y):
         '''
-        Preprocess the data.
+        Transform the input training data into the correct form.
         ----------
         Input
-                - X : Input data of shape (m, n_x)
-                - Y : Input target of shape (m,)
+                - X : Input data, numpy array shape (m, n_x) or (m,)
+                - Y : Input target, numpy array of shape (m,)
         Output
                 - X : New input data of shape (n_x, m)
                 - Y : New input target of shape (n_y, m)
         '''
+        # check that y is a 1D numpy array
+        assert isinstance(y, (pd.core.series.Series, np.ndarray)) and len(y.shape) == 1, \
+            'y must be a 1 dimensional numpy array or Series'
+        # check that X is a 1D or 2D numpy array
+        assert isinstance(X, (pd.core.series.Series, pd.core.frame.DataFrame, np.ndarray)) \
+            and (len(y.shape) == 2 or len(y.shape) == 1), \
+            'X must be a 1 or 2 dimensional numpy array or Series/Dataframe'
+        
+        # Make sure the data is in a numpy array form
+        X = np.array(X)
+        y = np.array(y)
+            
+        # if X is a 1D array, transform it in a 2D array (m,1)
+        if len(X.shape) == 1:
+            X = X.reshape(-1, 1)
+            
         # get the number of features n_x and number of examples m of X
         m = X.shape[0]
         
@@ -463,6 +481,22 @@ class AdamANN_clf(BaseEstimator):
         
         # initialize a list to plot the evolution of the cost function
         cost_list = []
+        
+        # n_cost :  number of time the cost will be computed and saved
+        if epoch >= 100:
+            cost_step = epoch//100
+            print_step = epoch//10     # number of time it will be printed if verbose = True
+        
+        elif epoch >= 10:
+            cost_step = 1
+            print_step = epoch//10
+        
+        else:
+            cost_step = 1
+            print_step = 1
+        
+        x_iter = [] # to keep count of the iteration when cost is computed, for plotting
+        
         for i in range(epoch):
             learning_rate /= 1 + learn_decay * i # decay of learning_rate
             for X, Y in minibatches:
@@ -479,26 +513,28 @@ class AdamANN_clf(BaseEstimator):
                 
                 parameters, v_grads, s_grads = self.UpdateParameters(parameters, grads, v_grads, s_grads, learning_rate, t)
                 
-            if  i%5 == 0:
+            
+            if  i%cost_step == 0:
                 # compute the cost function
                 AL, _ = self.ForwardProp(X, parameters, hidden_func, output_func)
                 cost = self.ComputeCost(Y, AL, parameters, output_func, alpha)
                 cost_list.append(cost)
+                x_iter.append(i)
                 
-                if verbose and (i%(epoch//10) == 0):
+                if verbose and (i%print_step == 0):
                     print('Cost function after epoch {} : {}'.format(i, cost))
         
-        
         cost = self.ComputeCost(Y, AL, parameters, output_func, alpha)
-        cost_list.append(cost)        
+        cost_list.append(cost)
+        x_iter.append(i)
         print('Cost function after epoch {} : {}'.format(i+1, cost))
         print('Time : %.3f s' % (time.time()-t0))
         
         # print the cost function for each iterations
         plt.figure()
-        plt.plot(cost_list)
+        plt.plot(x_iter, cost_list)
         plt.title('Cost function')
-        plt.xlabel('Number of iterations, by hundreds')
+        plt.xlabel('Number of iterations')
         plt.ylabel('Cost Function')
         
         return parameters, v_grads, s_grads

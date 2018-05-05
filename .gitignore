@@ -102,3 +102,6 @@ ENV/
 
 .ipynb_checkpoints/
 __pycache__/
+
+# data folder
+Data/
