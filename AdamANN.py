@@ -536,9 +536,9 @@ class AdamANN_clf(BaseEstimator):
             print_step = 1
         
         x_iter = [] # to keep count of the iteration when cost is computed, for plotting
-        learning_rate0 = learning_rate
+        
         for i in range(epoch):
-            learning_rate = learning_rate0 / (1 + learn_decay*i/epoch) # decay of learning_rate
+            learning_rate = self.learning_rate / (1 + learn_decay*i/epoch) # decay of learning_rate
             for X, Y in minibatches:
                 self.n_iter += 1
                 
@@ -563,6 +563,8 @@ class AdamANN_clf(BaseEstimator):
                 
                 if verbose and (i%print_step == 0):
                     print('Cost function after epoch {} : {}'.format(i, cost))
+        
+        self.learning_rate = learning_rate # update self.learning_rate for hot start
         
         cost = self.ComputeCost(Y, AL, parameters, output_func, alpha)
         cost_list.append(cost)

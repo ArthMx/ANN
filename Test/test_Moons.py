@@ -18,13 +18,13 @@ normalizer = StandardScaler()
 X = normalizer.fit_transform(X)
 
 # set hyperparameters
-hidden_units = [50,50]
-hidden_func = 'relu'
+hidden_units = [1000]
+hidden_func = 'tanh'
 alpha = 0.1
-epoch = 100
+epoch = 20
 learning_rate = 0.01
 learn_decay = 1
-batch_size = 64
+batch_size = 128
 
 NN_clf = AdamANN_clf(hidden_units, hidden_func, alpha, epoch, learning_rate, 
                      learn_decay, batch_size, hot_start=True)

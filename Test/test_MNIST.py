@@ -39,11 +39,11 @@ X_test = normalizer.transform(X_test)
 
 
 # set hyperparameters
-hidden_units = [500,500]
+hidden_units = [20,20]
 hidden_func = 'relu'
-alpha = 0.1
+alpha = 0.2
 epoch = 10
-learning_rate = 0.001
+learning_rate = 0.01
 learn_decay = 10
 batch_size = 512
 
