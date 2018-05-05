@@ -39,21 +39,21 @@ X_test = normalizer.transform(X_test)
 
 
 # set hyperparameters
-hidden_units = [50]
+hidden_units = [500,500]
 hidden_func = 'relu'
-alpha = 1
-epoch = 30
-learning_rate = 0.01
-learn_decay = 20
+alpha = 0.1
+epoch = 10
+learning_rate = 0.001
+learn_decay = 10
 batch_size = 512
 
-AdamNN = AdamANN_clf(hidden_units, hidden_func, alpha, epoch, learning_rate, 
+NN_clf = AdamANN_clf(hidden_units, hidden_func, alpha, epoch, learning_rate, 
                      learn_decay, batch_size, hot_start=True)
 
-AdamNN.fit(X_train, y_train)
+NN_clf.fit(X_train, y_train)
 
-y_train_pred = AdamNN.predict(X_train)
-y_cv_pred = AdamNN.predict(X_cv)
+y_train_pred = NN_clf.predict(X_train)
+y_cv_pred = NN_clf.predict(X_cv)
 
 train_acc = accuracy_score(y_train_pred, y_train)
 cv_acc = accuracy_score(y_cv_pred, y_cv)

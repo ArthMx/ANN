@@ -17,14 +17,17 @@ X,y = make_moons(500, noise=0.3)
 normalizer = StandardScaler()
 X = normalizer.fit_transform(X)
 
-batch_size = 128
-alpha = 0.1
+# set hyperparameters
 hidden_units = [50,50]
-hidden_func='relu'
+hidden_func = 'relu'
+alpha = 0.1
+epoch = 100
+learning_rate = 0.01
+learn_decay = 1
+batch_size = 64
 
-NN_clf = AdamANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func,
-                          batch_size=batch_size, epoch=50, learning_rate=0.01,
-                          hot_start=True, grad_check=False)
+NN_clf = AdamANN_clf(hidden_units, hidden_func, alpha, epoch, learning_rate, 
+                     learn_decay, batch_size, hot_start=True)
 
 NN_clf.fit(X, y)
 

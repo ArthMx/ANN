@@ -49,7 +49,7 @@ class AdamANN_clf(BaseEstimator):
                     - y_pred : Predicted labels for X (m,)
     '''
     def __init__(self, hidden_units, hidden_func='relu', alpha=0, epoch=100, 
-                 learning_rate=0.01, learn_decay=0, batch_size=256, beta1=0.9, 
+                 learning_rate=0.001, learn_decay=0, batch_size=256, beta1=0.9, 
                  beta2=0.999, hot_start=False, verbose=True, grad_check=False):
         
         self.alpha = alpha
