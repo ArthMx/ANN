@@ -24,12 +24,13 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 hidden_units = [50,50]
 hidden_func = 'relu'
 alpha = 0.1
+p_dropout = 0
 epoch = 100
 learning_rate = 0.01
 learn_decay = 10
 batch_size = 256
 
-NN_clf = AdamANN_clf(hidden_units, hidden_func, alpha, epoch, learning_rate, 
+NN_clf = AdamANN_clf(hidden_units, hidden_func, alpha, p_dropout, epoch, learning_rate, 
                      learn_decay, batch_size, hot_start=True)
 
 NN_clf.fit(X_train, y_train)

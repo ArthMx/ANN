@@ -39,16 +39,17 @@ X_test = normalizer.transform(X_test)
 
 
 # set hyperparameters
-hidden_units = [20,20]
+hidden_units = [1000,1000]
 hidden_func = 'relu'
-alpha = 0.2
-epoch = 10
-learning_rate = 0.01
-learn_decay = 10
+alpha = 0.1
+p_dropout = 0.2
+epoch = 20
+learning_rate = 0.001
+learn_decay = 20
 batch_size = 512
 
-NN_clf = AdamANN_clf(hidden_units, hidden_func, alpha, epoch, learning_rate, 
-                     learn_decay, batch_size, hot_start=True)
+NN_clf = AdamANN_clf(hidden_units, hidden_func, alpha, p_dropout, epoch, learning_rate, 
+                     learn_decay, batch_size)
 
 NN_clf.fit(X_train, y_train)
 

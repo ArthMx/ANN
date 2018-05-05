@@ -12,22 +12,23 @@ from sklearn.datasets import make_blobs, make_moons
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
 
-X,y = make_moons(500, noise=0.3)
+X,y = make_moons(500, noise=0.1)
 
 normalizer = StandardScaler()
 X = normalizer.fit_transform(X)
 
 # set hyperparameters
-hidden_units = [1000]
+hidden_units = [50,50,50]
 hidden_func = 'tanh'
 alpha = 0.1
+p_dropout = 0
 epoch = 20
 learning_rate = 0.01
 learn_decay = 1
 batch_size = 128
 
-NN_clf = AdamANN_clf(hidden_units, hidden_func, alpha, epoch, learning_rate, 
-                     learn_decay, batch_size, hot_start=True)
+NN_clf = AdamANN_clf(hidden_units, hidden_func, alpha, p_dropout, epoch, learning_rate, 
+                     learn_decay, batch_size)
 
 NN_clf.fit(X, y)
 

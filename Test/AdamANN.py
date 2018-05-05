@@ -20,6 +20,8 @@ class AdamANN_clf(BaseEstimator):
         - hidden_func : Activation function to be used for the hidden layers,
                         'sigmoid', 'tanh' or 'relu'
         - alpha : Regularization parameter of weight decay (l2)
+        - p_dropout : Regularization parameter of dropout, it's the probability
+                        to not update the parameters at each steps
         - epoch : Number of iteration through the training dataset
         - learning_rate : Learning rate for the gradient descent
         - learn_decay : Decay rate of the learning_rate parameter, if set to x
@@ -48,11 +50,13 @@ class AdamANN_clf(BaseEstimator):
                 Output
                     - y_pred : Predicted labels for X (m,)
     '''
-    def __init__(self, hidden_units, hidden_func='relu', alpha=0, epoch=100, 
-                 learning_rate=0.001, learn_decay=0, batch_size=256, beta1=0.9, 
-                 beta2=0.999, hot_start=False, verbose=True, grad_check=False):
+    def __init__(self, hidden_units, hidden_func='relu', alpha=0, p_dropout=0, 
+                 epoch=100, learning_rate=0.001, learn_decay=0, batch_size=256, 
+                 beta1=0.9, beta2=0.999, hot_start=False, verbose=True, 
+                 grad_check=False):
         
         self.alpha = alpha
+        self.p_dropout = p_dropout
         self.hidden_units = hidden_units
         self.hidden_func = hidden_func
         self.epoch = epoch
@@ -66,6 +70,9 @@ class AdamANN_clf(BaseEstimator):
         self.grad_check = grad_check
 
         self.L = len(hidden_units) + 1
+        
+        assert p_dropout < 1, 'p_dropout must be lower than 1 and \
+                                equal or bigger than 0'
         
     def fit(self, X, y):
         '''
@@ -153,6 +160,18 @@ class AdamANN_clf(BaseEstimator):
             
         return parameters
     
+    def Dropout(self, A):
+        '''
+        Generate randomly a mask matrix and multiply A by it.
+        '''
+        p_dropout = self.p_dropout
+        
+        mask = np.random.rand(A.shape[0], A.shape[1]) < (1 - p_dropout)
+        
+        A_dropout = A * mask / (1 - p_dropout)
+        
+        return A_dropout
+    
     def ForwardProp(self, X, parameters, hidden_func, output_func):
         '''
         Compute the prediction matrix A3.
@@ -182,6 +201,10 @@ class AdamANN_clf(BaseEstimator):
                 Al = np.tanh(Zl)
             if hidden_func=='relu':
                 Al = self.ReLU(Zl)
+            
+            # use drop out if p_dropout > 1
+            if self.p_dropout > 0:
+                Al = self.Dropout(Al)
             
             # write into the cache dict the Z and A
             cache['Z' + str(l)] = Zl

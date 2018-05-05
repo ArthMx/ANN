@@ -1,17 +1,30 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu May  3 15:23:47 2018
+Created on Sat May  5 23:57:12 2018
 
 @author: Arthur
 """
 import numpy as np
 import matplotlib.pyplot as plt
 from AdamANN import AdamANN_clf
-from sklearn.datasets import make_blobs, make_moons
-from sklearn.metrics import accuracy_score
+
 from sklearn.preprocessing import StandardScaler
 
-X,y = make_blobs(500,2,5)
+N = 100 # number of points per class
+D = 2 # dimensionality
+K = 3 # number of classes
+X = np.zeros((N*K,D)) # data matrix (each row = single example)
+y = np.zeros(N*K, dtype='uint8') # class labels
+for j in range(K):
+  ix = range(N*j,N*(j+1))
+  r = np.linspace(0.0,1,N) # radius
+  t = np.linspace(j*4,(j+1)*4,N) + np.random.randn(N)*0.2 # theta
+  X[ix] = np.c_[r*np.sin(t), r*np.cos(t)]
+  y[ix] = j
+# lets visualize the data:
+#plt.scatter(X[:, 0], X[:, 1], c=y, s=40, cmap=plt.cm.Spectral)
+#plt.show()
+
 
 normalizer = StandardScaler()
 X = normalizer.fit_transform(X)
@@ -20,14 +33,14 @@ X = normalizer.fit_transform(X)
 hidden_units = [50,50]
 hidden_func = 'relu'
 alpha = 0
-p_dropout = 0
-epoch = 200
+p_dropout = 0.1
+epoch = 100
 learning_rate = 0.01
 learn_decay = 10
-batch_size = 128
+batch_size = 100
 
 NN_clf = AdamANN_clf(hidden_units, hidden_func, alpha, p_dropout, epoch, learning_rate, 
-                     learn_decay, batch_size, hot_start=True)
+                     learn_decay, batch_size)
 
 NN_clf.fit(X, y)
 
