@@ -3,6 +3,7 @@ from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.preprocessing import StandardScaler
+from AdamANN import AdamANN_clf
 
 digits = load_digits()
 

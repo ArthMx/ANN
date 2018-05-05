@@ -6,6 +6,7 @@ Created on Thu May  3 15:23:47 2018
 """
 import numpy as np
 import matplotlib.pyplot as plt
+from AdamANN import AdamANN_clf
 from sklearn.datasets import make_blobs, make_moons
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler

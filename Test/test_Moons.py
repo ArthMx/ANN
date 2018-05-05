@@ -7,6 +7,7 @@ Created on Fri May  4 15:49:42 2018
 
 import numpy as np
 import matplotlib.pyplot as plt
+from AdamANN import AdamANN_clf
 from sklearn.datasets import make_blobs, make_moons
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
@@ -24,7 +25,7 @@ output_func='sigmoid'
 
 NN_clf = AdamANN_clf(alpha=alpha, hidden_units=hidden_units, hidden_func=hidden_func, \
                           batch_size=batch_size, output_func=output_func, 
-                          epoch=50, learning_rate=0.01, grad_check=False)
+                          epoch=50, learning_rate=0.01, hot_start=True, grad_check=False)
 
 NN_clf.fit(X, y)
 
