@@ -40,7 +40,7 @@ learn_decay = 10
 batch_size = 100
 
 NN_clf = AdamANN_clf(hidden_units, hidden_func, alpha, p_dropout, epoch, learning_rate, 
-                     learn_decay, batch_size)
+                     learn_decay, batch_size, verbose=True)
 
 NN_clf.fit(X, y)
 

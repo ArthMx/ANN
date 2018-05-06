@@ -52,7 +52,7 @@ class AdamANN_clf(BaseEstimator):
     '''
     def __init__(self, hidden_units, hidden_func='relu', alpha=0, p_dropout=0, 
                  epoch=100, learning_rate=0.001, learn_decay=0, batch_size=256, 
-                 beta1=0.9, beta2=0.999, hot_start=False, verbose=True, 
+                 beta1=0.9, beta2=0.999, hot_start=False, verbose=False, 
                  grad_check=False):
         
         self.alpha = alpha
@@ -586,6 +586,7 @@ class AdamANN_clf(BaseEstimator):
                 t = self.n_iter
                 
                 parameters, v_grads, s_grads = self.UpdateParameters(parameters, grads, v_grads, s_grads, learning_rate, t)
+                
                 self.parameters, self.v_grads, self.s_grads = parameters, v_grads, s_grads
             
             if  i%cost_step == 0:
@@ -604,7 +605,8 @@ class AdamANN_clf(BaseEstimator):
                 
                 self.p_dropout = p_dropout_temp
         
-        self.learning_rate = learning_rate # update self.learning_rate for hot start
+        if hot_start:
+            self.learning_rate = learning_rate # update self.learning_rate for hot start
         
         cost = self.ComputeCost(Y, AL, parameters, output_func, alpha)
         cost_list.append(cost)
@@ -811,7 +813,7 @@ class AdamANN_reg(BaseEstimator):
     '''
     def __init__(self, hidden_units, hidden_func='relu', alpha=0, p_dropout=0, 
                  epoch=100, learning_rate=0.001, learn_decay=0, batch_size=256, 
-                 beta1=0.9, beta2=0.999, hot_start=False, verbose=True, 
+                 beta1=0.9, beta2=0.999, hot_start=False, verbose=False, 
                  grad_check=False):
         
         self.alpha = alpha
@@ -1334,7 +1336,8 @@ class AdamANN_reg(BaseEstimator):
                 
                 self.p_dropout = p_dropout_temp
         
-        self.learning_rate = learning_rate # update self.learning_rate for hot start
+        if hot_start:
+            self.learning_rate = learning_rate # update self.learning_rate for hot start
         
         cost = self.ComputeCost(Y, AL, parameters, alpha)
         cost_list.append(cost)
